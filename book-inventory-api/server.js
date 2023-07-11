@@ -3,7 +3,7 @@ const app = express();
 const port = 4000;
 const { query } = require("./database");
 require("dotenv").config();
-const{RecipeApplication} = 
+const{BookApplication} = 
 app.use((req, res, next) => {
   console.log(`Request: ${req.method} ${req.originalUrl}`);
   res.on("finish", () => {
@@ -27,24 +27,24 @@ app.get("/", (req, res) => {
 // Get all the books
 app.get("/books", async (req, res) => {
   try {
-    const allBooks = await query("SELECT * FROM job_applications");
+    const allBooks = await query("SELECT * FROM bookinventories"); //bookinventories is name of table
 
-    res.status(200).json(allJobs.rows);
+    res.status(200).json(allBooks.rows);
   } catch (err) {
     console.error(err);
   }
 });
 
 // Get a specific job
-app.get("/jobs/:id", async (req, res) => {
+app.get("/books/:id", async (req, res) => {
   const jobId = parseInt(req.params.id, 10);
 
   try {
-    const job = await query("SELECT * FROM job_applications WHERE id = $1", [
-      jobId,
+    const book = await query("SELECT * FROM bookinventories WHERE id = $1", [
+      bookId,
     ]);
 
-    if (job.rows.length > 0) {
+    if (book.rows.length > 0) {
       res.status(200).json(job.rows[0]);
     } else {
       res.status(404).send({ message: "Job not found" });
@@ -54,7 +54,7 @@ app.get("/jobs/:id", async (req, res) => {
   }
 });
 
-// Create a new job
+// Create a new book
 app.post("/books", async (req, res) => {
   const {
     author,
@@ -65,46 +65,34 @@ app.post("/books", async (req, res) => {
   } = req.body;
 
   try {
-    const newJob = await query(
-      "INSERT INTO job_applications (company, title, minSalary, maxSalary, location, postDate, jobPostUrl, applicationDate, lastContactDate, companyContact, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *",
+    const newBook = await query(
+      "INSERT INTO bookinventories (author, title, NumOfPages, genre,status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [
-        company,
+        author,
         title,
-        minSalary,
-        maxSalary,
-        location,
-        postDate,
-        jobPostUrl,
-        applicationDate,
-        lastContactDate,
-        companyContact,
+        NumOfPages,
+        genre,
         status,
       ]
     );
 
-    res.status(201).json(newJob.rows[0]);
+    res.status(201).json(newBook.rows[0]);
   } catch (err) {
     console.error(err);
   }
 });
 
 // Update a specific job
-app.patch("/jobs/:id", async (req, res) => {
+app.patch("/books/:id", async (req, res) => {
   const jobId = parseInt(req.params.id, 10);
 
   const fieldNames = [
-    "company",
+   " author",
     "title",
-    "minSalary",
-    "maxSalary",
-    "location",
-    "postDate",
-    "jobPostUrl",
-    "applicationDate",
-    "lastContactDate",
-    "companyContact",
-    "status",
-    "jobId",
+    "NumOfPages",
+    "genre",
+   "status",
+    "bookId"
   ].filter((name) => req.body[name]);
 
   let updatedValues = fieldNames.map(name => req.body[name]);
@@ -113,15 +101,15 @@ app.patch("/jobs/:id", async (req, res) => {
   }).join(', ');
 
   try {
-    const updatedJob = await query(
-      `UPDATE job_applications SET ${setValues} WHERE id = $${fieldNames.length+1} RETURNING *`,
-      [...updatedValues, jobId]
+    const updatedBook = await query(
+      `UPDATE bookinventories SET ${setValues} WHERE id = $${fieldNames.length+1} RETURNING *`,
+      [...updatedValues, bookId]
     );
 
-    if (updatedJob.rows.length > 0) {
-      res.status(200).json(updatedJob.rows[0]);
+    if (updatedBook.rows.length > 0) {
+      res.status(200).json(updatedBook.rows[0]);
     } else {
-      res.status(404).send({ message: "Job not found" });
+      res.status(404).send({ message: " book not found" });
     }
   } catch (err) {
     res.status(500).send({ message: err.message });
@@ -130,18 +118,18 @@ app.patch("/jobs/:id", async (req, res) => {
 });
 
 // Delete a specific job
-app.delete("/jobs/:id", async (req, res) => {
-  const jobId = parseInt(req.params.id, 10);
+app.delete("/books/:id", async (req, res) => {
+  const bookId = parseInt(req.params.id, 10);
 
   try {
-    const deleteOp = await query("DELETE FROM job_applications WHERE id = $1", [
-      jobId,
+    const deleteOp = await query("DELETE FROM bookinventories WHERE id = $1", [
+      bookId,
     ]);
 
     if (deleteOp.rowCount > 0) {
-      res.status(200).send({ message: "Job deleted successfully" });
+      res.status(200).send({ message: "book deleted successfully" });
     } else {
-      res.status(404).send({ message: "Job not found" });
+      res.status(404).send({ message: "book not found" });
     }
   } catch (err) {
     console.error(err);
