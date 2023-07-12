@@ -1,3 +1,5 @@
+const { query } = require('./database');
+
 const books = [{
 id: 1,
 author: 'Thomas foye',
