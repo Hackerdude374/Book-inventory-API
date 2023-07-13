@@ -1,109 +1,77 @@
 const express = require("express");
 const app = express();
-const port = 4000;
+const port = 5000;
 const { query } = require("./database");
-require("dotenv").config();
-const{BookApplication} = 
-app.use((req, res, next) => {
-  console.log(`Request: ${req.method} ${req.originalUrl}`);
-  res.on("finish", () => {
-    // the 'finish' event will be emitted when the response is handed over to the OS
-    console.log(`Response Status: ${res.statusCode}`);
-  });
-  next();
-});
+
 app.use(express.json());
 
-function getNextIdFromCollection(collection) {
-  if (collection.length === 0) return 1;
-  const lastRecord = collection[collection.length - 1];
-  return lastRecord.id + 1;
-}
+
+
 
 app.get("/", (req, res) => {
   res.send("Welcome to the Book Inventory API!!!!");
+});
+//create books
+
+app.post("/books", async (req, res) => {
+  const { author, title, NumOfPages, genre } = req.body;
+
+try {
+  const newBook = await query(
+    "INSERT INTO books (author, title, NumOfPages, genre) VALUES ($1, $2, $3, $4) RETURNING *",
+    [author,title,NumOfPages,  genre  ]
+  );
+
+  res.status(201).json(newBook.rows[0]);
+} catch (err) {
+  console.error(err);
+}
 });
 
 // Get all the books
 app.get("/books", async (req, res) => {
   try {
-    const allBooks = await query("SELECT * FROM bookinventories"); //bookinventories is name of table
-
+    const allBooks = await query("SELECT * FROM books");
+    // rows
     res.status(200).json(allBooks.rows);
   } catch (err) {
+    res.status(404).send({ message: "all Books not found" });
     console.error(err);
   }
 });
 
-// Get a specific job
+// Get a specific book
+
 app.get("/books/:id", async (req, res) => {
-  const jobId = parseInt(req.params.id, 10);
+  const bookId = parseInt(req.params.id, 10);
 
   try {
-    const book = await query("SELECT * FROM bookinventories WHERE id = $1", [
-      bookId,
-    ]);
+    const book = await query("SELECT * FROM books WHERE id = $1", [bookId]);
 
     if (book.rows.length > 0) {
-      res.status(200).json(job.rows[0]);
+      res.status(200).json(book.rows[0]); // Corrected: Changed "job.rows[0]" to "book.rows[0]"
     } else {
-      res.status(404).send({ message: "Job not found" });
+      res.status(404).send({ message: "Book has not been found" });
     }
   } catch (err) {
     console.error(err);
   }
 });
 
-// Create a new book
-app.post("/books", async (req, res) => {
-  const {
-    author,
-    title,
-    NumOfPages,
-    genre,
-    status,
-  } = req.body;
 
-  try {
-    const newBook = await query(
-      "INSERT INTO bookinventories (author, title, NumOfPages, genre,status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [
-        author,
-        title,
-        NumOfPages,
-        genre,
-        status,
-      ]
-    );
 
-    res.status(201).json(newBook.rows[0]);
-  } catch (err) {
-    console.error(err);
-  }
-});
-
-// Update a specific job
+// Update a specific book
 app.patch("/books/:id", async (req, res) => {
-  const jobId = parseInt(req.params.id, 10);
+  const bookId = parseInt(req.params.id, 10);
 
-  const fieldNames = [
-   " author",
-    "title",
-    "NumOfPages",
-    "genre",
-   "status",
-    "bookId"
-  ].filter((name) => req.body[name]);
+  const { author, title, NumOfPages, genre } = req.body;
 
-  let updatedValues = fieldNames.map(name => req.body[name]);
-  const setValues = fieldNames.map((name, i) => {
-    return `${name} = $${i + 1}`
-  }).join(', ');
+
 
   try {
     const updatedBook = await query(
-      `UPDATE bookinventories SET ${setValues} WHERE id = $${fieldNames.length+1} RETURNING *`,
-      [...updatedValues, bookId]
+      `UPDATE books SET author = $1, title = $2, NumOfPages = $3, genre = $4 WHERE id = $5 RETURNING *`,
+      [author, title, NumOfPages, genre]
     );
 
     if (updatedBook.rows.length > 0) {
@@ -117,16 +85,16 @@ app.patch("/books/:id", async (req, res) => {
   }
 });
 
-// Delete a specific job
+// Delete a specific book
 app.delete("/books/:id", async (req, res) => {
   const bookId = parseInt(req.params.id, 10);
 
   try {
-    const deleteOp = await query("DELETE FROM bookinventories WHERE id = $1", [
+    const deleteBook = await query("DELETE FROM books WHERE id = $1", [
       bookId,
     ]);
 
-    if (deleteOp.rowCount > 0) {
+    if (deleteBook.rowCount > 0) {
       res.status(200).send({ message: "book deleted successfully" });
     } else {
       res.status(404).send({ message: "book not found" });

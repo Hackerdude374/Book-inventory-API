@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 require("dotenv").config();
-
+//pool connects user to database
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -12,30 +12,30 @@ const pool = new Pool({
 // ...
 
 const createTableQuery = `
-  CREATE TABLE IF NOT EXISTS bookinventories (
+  CREATE TABLE IF NOT EXISTS books (
     id SERIAL PRIMARY KEY,
     author VARCHAR(100) NOT NULL,
     title VARCHAR(100) NOT NULL,
     NumOfPages INTEGER,
-    genre VARCHAR(100) NOT NULL,
-    status INTEGER NOT NULL
+    genre VARCHAR(100) NOT NULL
   );
 `;
 
 const createTable = async () => {
   try {
     await pool.query(createTableQuery);
-    console.log('Table created successfully');
+    console.log("Table created successfully");
   } catch (err) {
-    console.error('Error executing query', err.stack);
+    console.error("Error executing query", err);
   }
 };
 
 createTable();
+
 module.exports = {
-    query: (text, params, callback) => {
-      console.log("QUERY:", text, params || "");
-      return pool.query(text, params, callback);
-    },
-  };
-module.exports = pool;
+  query: (text, params, callback) => {
+    console.log("QUERY:", text, params || "");
+    return pool.query(text, params, callback);
+  },
+};
+
